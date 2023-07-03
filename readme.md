@@ -12,3 +12,5 @@ python Main.py
 ```
 
 If you don't have a file called "stocks.txt" the program will ask you for the tickers and quantities you want to add.
+
+![example](https://github.com/AndreaTorti-01/MyPyFinances/assets/74457299/04be2e9f-8b69-4812-906c-42f22d774e1e)
