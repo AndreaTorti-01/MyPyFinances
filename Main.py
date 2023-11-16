@@ -21,7 +21,12 @@ try:
                         raise ValueError("Total percentage exceeds 100")
                     stock = yf.Ticker(stock_ticker)
                     # determine quantity of shares owned based on percentage of portfolio
-                    quantity = int(percentage) / 100 * 10000 / stock.history(period="5d", interval="1d")["Close"].iloc[0]
+                    quantity = (
+                        int(percentage)
+                        / 100
+                        * 10000
+                        / stock.history(period="5d", interval="1d")["Close"].iloc[0]
+                    )
                     stocks.append((stock, int(quantity)))
                 except ValueError as e:
                     print(e)
@@ -37,7 +42,7 @@ try:
             except:
                 print("Invalid stock ticker or quantity of shares")
                 exit()
-                
+
 except FileNotFoundError:
     while True:
         try:
@@ -64,10 +69,27 @@ except FileNotFoundError:
         except ValueError:
             print("Please enter a valid stock ticker and quantity of shares")
 
+import concurrent.futures
+
+
 # get the closing prices for each stock over the last 6 months
+def get_closing_prices(stock_ticker):
+    return stock_ticker.history(period="6mo")["Close"]
+
+
 closings: List = []
-for stock_ticker, _ in stocks:
-    closings.append(stock_ticker.history(period="6mo")["Close"])
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    future_to_stock = {
+        executor.submit(get_closing_prices, stock_ticker): stock_ticker
+        for stock_ticker, _ in stocks
+    }
+    for future in concurrent.futures.as_completed(future_to_stock):
+        try:
+            data = future.result()
+        except Exception as exc:
+            print("%r generated an exception: %s" % (future_to_stock[future], exc))
+        else:
+            closings.append(data)
 
 # calculate the sum of the closing prices for each day multiplied by the quantity of shares owned
 capital: List[float] = []
@@ -84,7 +106,7 @@ for i in range(len(capital)):
         moving_average.append(capital[i])
     else:
         moving_average.append(sum(capital[i - 7 : i]) / 7)
-        
+
 # plot the capital and smoothed moving average over time
 plt.plot(closings[0].index, capital, label="Capital", linewidth=0.5)
 plt.plot(closings[0].index, moving_average, label="7 Day Moving Average")
