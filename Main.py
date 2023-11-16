@@ -9,6 +9,26 @@ stocks: List[Tuple[yf.Ticker, int]] = []
 # try to load the stocks from a file called stocks.txt
 try:
     with open("stocks.txt", "r") as f:
+        # check if the file begins with "percentage"
+        if f.readline().strip() == "percentage":
+            # if it does, read the percentage of the portfolio each stock makes up
+            total_percentage = 0
+            for line in f:
+                try:
+                    stock_ticker, percentage = line.split()
+                    total_percentage += int(percentage)
+                    if total_percentage > 100:
+                        raise ValueError("Total percentage exceeds 100")
+                    stock = yf.Ticker(stock_ticker)
+                    # determine quantity of shares owned based on percentage of portfolio
+                    quantity = int(percentage) / 100 * 10000 / stock.history(period="5d", interval="1d")["Close"].iloc[0]
+                    stocks.append((stock, int(quantity)))
+                except ValueError as e:
+                    print(e)
+                    exit()
+                except:
+                    print("Invalid stock ticker or percentage of portfolio")
+                    exit()
         for line in f:
             try:
                 stock_ticker, quantity = line.split()
@@ -17,6 +37,7 @@ try:
             except:
                 print("Invalid stock ticker or quantity of shares")
                 exit()
+                
 except FileNotFoundError:
     while True:
         try:
@@ -53,7 +74,7 @@ capital: List[float] = []
 for i in range(len(closings[0])):
     total = 0
     for j in range(len(closings)):
-        total += closings[j][i] * stocks[j][1]
+        total += closings[j].iloc[i] * stocks[j][1]
     capital.append(total)
 
 # add the 7 day moving average of the capital to the plot
@@ -63,9 +84,9 @@ for i in range(len(capital)):
         moving_average.append(capital[i])
     else:
         moving_average.append(sum(capital[i - 7 : i]) / 7)
-
+        
 # plot the capital and smoothed moving average over time
-plt.plot(closings[0].index, capital, label="Capital")
+plt.plot(closings[0].index, capital, label="Capital", linewidth=0.5)
 plt.plot(closings[0].index, moving_average, label="7 Day Moving Average")
 
 # add vertical lines where months start
@@ -77,5 +98,4 @@ for i in range(1, len(closings[0].index)):
 plt.title("MyPyFinances")
 
 plt.legend()
-plt.get_current_fig_manager().window.state("zoomed")  # type: ignore
 plt.show()

@@ -1,4 +1,4 @@
-qdve.f 85
-ecar.mi 253
-batt.mi 88
-rbot.mi 125
+percentage
+qdve.f 30
+ecar.mi 30
+batt.mi 40
